@@ -1,0 +1,17 @@
+[package]
+name = "learning_os"
+version = "0.1.0"
+edition = "2018"
+author=["Greg Vincent <gregvjrr@gmail.com>"]
+
+# Disable stack unwinding since this is OS specific
+# Since we have this in our JSON file, we can comment this out
+[profile.dev]
+# panic = "abort"
+
+[profile.release]
+# panic = "abort"
+
+# to make a boot image - link our kernel with a bootloader to make a bootimage
+[dependencies]
+bootloader = "0.9.23"
