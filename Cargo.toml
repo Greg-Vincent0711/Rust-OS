@@ -14,4 +14,4 @@ author=["Greg Vincent <gregvjrr@gmail.com>"]
 
 # to make a boot image - link our kernel with a bootloader to make a bootimage
 [dependencies]
-bootloader = "0.9.23"
+bootloader = "0.9.8"
