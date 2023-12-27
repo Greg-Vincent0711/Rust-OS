@@ -19,7 +19,13 @@ mod vga_buffer;
  */
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    vga_buffer::test_write();
+    use core::fmt::Write;
+    /*
+     * interior mutability is allowed while also being mem safe, since we're locking
+     * unwrap is again used since fmtWrite returns a Return type, which we have to use
+     */
+    vga_buffer::WRITER.lock().write_str("Hello in a new way.").unwrap();
+    write!(vga_buffer::WRITER.lock(), "Numbers: {} {}", 50, 29.2020).unwrap();
     loop{}
 }
 

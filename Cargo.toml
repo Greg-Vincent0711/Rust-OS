@@ -3,15 +3,18 @@ name = "learning_os"
 version = "0.1.0"
 edition = "2018"
 author=["Greg Vincent <gregvjrr@gmail.com>"]
-
-# Disable stack unwinding since this is OS specific
-# Since we have this in our JSON file, we can comment this out
-[profile.dev]
-# panic = "abort"
-
-[profile.release]
-# panic = "abort"
-
 # to make a boot image - link our kernel with a bootloader to make a bootimage
 [dependencies]
 bootloader = "0.9.8"
+# specify our write fn must not be optimized, has side effects
+volatile = "0.2.6"
+# note on spinlocks and why we're using it in this project
+# because the Writer object is static with fields that can't be accesed statically unless
+# with some sort of pointer like a mutable static, but these are discouraged
+# we need a way to ensure that it's usable in a safe way, which is why the spinlock is used
+# spinlocks are also OS independent, so valid for this project
+spin = "0.5.2"
+
+[dependencies.lazy_static]
+version = "1.0"
+features = ["spin_no_std"]

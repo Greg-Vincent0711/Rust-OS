@@ -1,19 +1,19 @@
 // Gregory Vincent
+
 #![allow(unused_doc_comments)]
+// keep writing to the vga buffer from being optimized
+use volatile::Volatile;
+use core::fmt;
 
-/**
-  * struct must be represented as an unsigned 8bit int
-  * repr - controls memory layout of a type
-*/
-
+#[allow(dead_code)]
 /**
   * derive - generates implementations for common struct traits
   * debug - type can be printed with println!("{:?}", value)
   * partialeq - can check for equality using ==
   * Eq - support for structural equality
 */
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+// repr - controls memory layout of a struct
 #[repr(u8)]
 pub enum Color{
     Black = 0,
@@ -34,7 +34,7 @@ pub enum Color{
     White = 15,
 }
 
-//redeclare derive since different structs need different fns
+//redeclare derive since different structs need different traits
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /**
  * ColorCode struct adds no memory overhead
@@ -57,10 +57,10 @@ impl ColorCode{
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 /**
  * use C representation of a struct/enum
- * useful when interacting with C code
+ * useful when interacting with C code/cross compatibility
  */
 #[repr(C)]
 struct ScreenCharacter{
@@ -75,7 +75,7 @@ const BUFFER_WIDTH: usize = 80;
 #[repr(transparent)]
 struct VgaBuffer{
     //characters is a 2d array 25*80 array of possible characters
-    chars: [[ScreenCharacter; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    chars: [[Volatile<ScreenCharacter>; BUFFER_WIDTH]; BUFFER_HEIGHT]
 }
 
 //used to write to the screen
@@ -102,10 +102,10 @@ impl Writer{
                 let col = self.column_position;
                 let row = BUFFER_HEIGHT - 1;
                 let color_code = self.color_code;
-                self.buffer.chars[row][col] = ScreenCharacter{
+                self.buffer.chars[row][col].write(ScreenCharacter{
                     character: data_to_write,
                     color_code
-                };
+                });
                 self.column_position += 1;
             }
         }
@@ -127,17 +127,52 @@ impl Writer{
         }
     }
 
-    //todo - implement
-    fn new_line(&mut self){ }
+
+    fn new_line(&mut self){
+        //omit the 0th row since it's off the screen
+        for row in 1..BUFFER_HEIGHT{
+            for col in 0..BUFFER_WIDTH{
+                //shift everything up one if need be
+                let character = self.buffer.chars[row][col].read();
+                self.buffer.chars[row - 1][col].write(character);
+            }
+        }
+        self.clear_row(BUFFER_HEIGHT - 1);
+        self.column_position = 0;
+     }
+
+     //todo - implement
+     fn clear_row(&mut self, row: usize){
+        let blank = ScreenCharacter{
+            color_code: self.color_code,
+            character: b' ',
+        };
+        for col in 0..BUFFER_WIDTH{
+            self.buffer.chars[row][col].write(blank);
+        }
+     }
 }
 
-pub fn test_write() {
-    let mut writer = Writer {
+//add support for built-in formatting macros for the Writer struct
+impl fmt::Write for Writer{
+    fn write_str(&mut self, s:&str) -> fmt::Result{
+        self.write_string(s);
+        Ok(())
+    }
+}
+
+/**
+ * Static WRITER object refers to nonstatic references 
+ * This is why the the lazy_static macro is used
+ * lazy static is initialized on first use - run time
+ * spin is used to ensure memory safety - more in cargo.toml
+ */
+use spin::Mutex;
+use lazy_static::lazy_static;
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer{
         column_position: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
-        buffer: unsafe { &mut *(0xb8000 as *mut VgaBuffer) },
-    };
-    writer.write_byte(b'h');
-    writer.write_string("ello there");
-
+        buffer: unsafe { &mut *(0xb8000 as *mut VgaBuffer) }
+    });
 }
