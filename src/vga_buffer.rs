@@ -141,8 +141,8 @@ impl Writer{
         self.column_position = 0;
      }
 
-     //todo - implement
      fn clear_row(&mut self, row: usize){
+        //create a blank character, write it into the vga buffer
         let blank = ScreenCharacter{
             color_code: self.color_code,
             character: b' ',
@@ -176,3 +176,30 @@ lazy_static! {
         buffer: unsafe { &mut *(0xb8000 as *mut VgaBuffer) }
     });
 }
+
+
+
+// excluded from documentation - not explicitly called
+#[doc(hidden)]
+pub fn _print(args: fmt::Arguments){
+    //use Writ trait without relying on stdlib
+    use core::fmt::Write;
+    WRITER.lock().write_fmt(args).unwrap();
+}
+
+//builds off print fn
+#[macro_export]
+macro_rules! print {
+    // take an argument, print it using the actual vga buffer print after formatting
+    ($($arg:tt)*) => {$crate::vga_buffer::_print(format_args!($($arg)*))};
+}
+
+//builds off print macro
+#[macro_export]
+macro_rules! println {
+    //print a newline if called empty
+    () => ($crate::print!("\n"));
+    //otherwise print it with a newline
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+}
+

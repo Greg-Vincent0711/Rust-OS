@@ -9,9 +9,9 @@ bootloader = "0.9.8"
 # specify our write fn must not be optimized, has side effects
 volatile = "0.2.6"
 # note on spinlocks and why we're using it in this project
-# because the Writer object is static with fields that can't be accesed statically unless
-# with some sort of pointer like a mutable static, but these are discouraged
-# we need a way to ensure that it's usable in a safe way, which is why the spinlock is used
+# because the Writer object is static with fields that can't be accesed statically 
+# without some sort of pointer like a mutable static, but these are discouraged
+# we need a way to ensure that it's usable/has interior mutability, which is why the spinlock is used
 # spinlocks are also OS independent, so valid for this project
 spin = "0.5.2"
 
