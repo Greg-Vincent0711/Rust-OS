@@ -1,5 +1,5 @@
-// Gregory Vincent
-//disables the standard library
+// Gregory Vincent Jr
+// disables the standard library
 #![no_std]
 //disable std entry point - libc
 #![no_main]
