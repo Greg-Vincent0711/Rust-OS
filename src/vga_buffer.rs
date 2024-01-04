@@ -203,3 +203,37 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
+//vga buffer tests
+
+#[test_case]
+fn test_println(){
+    println!("Testing print to vga buffer");
+}
+
+//tests for many lines printing and shifting off page
+#[test_case]
+fn test_println_many(){
+    for _ in 0..150{
+        println!("Testing println with a long output")
+    }
+}
+
+#[test_case]
+fn verify_output(){
+    //test by writing something to the screen
+    let s = "any random string that fits on a single line.";
+    println!("{}", s);
+    for(i, c) in s.chars().enumerate(){
+        //read back that same screen and compare them
+        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+        assert_eq!(char::from(screen_char.character), c)
+    }
+}
+
+#[test_case]
+fn test_invalid_characters(){
+    //characters not in the accepted range should print ■ character
+    let invald_char = b'\xF6'; // ö
+    println!("{}", invald_char);
+    let retrieved_char = WRITER.lock().buffer.chars
+}

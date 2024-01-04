@@ -6,6 +6,8 @@ author=["Greg Vincent <gregvjrr@gmail.com>"]
 # to make a boot image - link our kernel with a bootloader to make a bootimage
 [dependencies]
 bootloader = "0.9.8"
+# needed for abstractions instead of invoking in/out assembly 
+x86_64 = "0.14.2"
 # specify our write fn must not be optimized, has side effects
 volatile = "0.2.6"
 # note on spinlocks and why we're using it in this project
@@ -14,7 +16,19 @@ volatile = "0.2.6"
 # we need a way to ensure that it's usable/has interior mutability, which is why the spinlock is used
 # spinlocks are also OS independent, so valid for this project
 spin = "0.5.2"
+# used to see output in the console with a UART serial port
+uart_16550 = "0.2.0"
 
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
+
+# for exiting qemu and printing to the console
+# setting an exit device at port 0xf4, with a size of 4 bytes
+[package.metadata.bootimage]
+test-args = [
+    "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio",
+    "-display", "none"
+]
+# cargo test exit code workaround
+test-success-exit-code = 33
