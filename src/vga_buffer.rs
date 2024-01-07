@@ -203,8 +203,7 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
-//vga buffer tests
-
+//vga buffer test
 #[test_case]
 fn test_println(){
     println!("Testing print to vga buffer");
@@ -214,7 +213,7 @@ fn test_println(){
 #[test_case]
 fn test_println_many(){
     for _ in 0..150{
-        println!("Testing println with a long output")
+        println!("Testing println with a long output");
     }
 }
 
@@ -228,12 +227,4 @@ fn verify_output(){
         let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
         assert_eq!(char::from(screen_char.character), c)
     }
-}
-
-#[test_case]
-fn test_invalid_characters(){
-    //characters not in the accepted range should print ■ character
-    let invald_char = b'\xF6'; // ö
-    println!("{}", invald_char);
-    let retrieved_char = WRITER.lock().buffer.chars
 }
