@@ -10,8 +10,10 @@ use core::panic::PanicInfo;
 use learning_os::println;
 
 
-// TO RUN WITH QEMU -  cargo bootimage; qemu-system-x86_64 -drive format=raw,file=target/x86_64-buildData/debug/bootimage-learning_os.bin
+// TO RUN WITH QEMU -  cargo bootimage; 
+// first time running with qemu: qemu-system-x86_64 -drive format=raw,file=target/x86_64-buildData/debug/bootimage-learning_os.bin
 // TO TEST - cargo test
+
 /**
  * new entry point - no runtime is calling main anymore
  * 
@@ -23,12 +25,17 @@ use learning_os::println;
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     println!("Hello Universe{}", "!");
+    //initialize the idt, set the breakpoint handler
+    learning_os::init();
+    //invoke a breakpoint exception to test the handler
+    x86_64::instructions::interrupts::int3();
     /*
      * test_main is conditionally compiled
      * Only when the test_runner fn is in effect
      */
     #[cfg(test)]
     test_main();
+    println!("Successfully caught a breakpoint and didn't crash.");
     loop{}
 }
 

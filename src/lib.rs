@@ -6,9 +6,16 @@
 #![test_runner(crate::test_runner)]
 //needed so that testing frame work uses test_runner as main
 #![reexport_test_harness_main = "test_main"]
+//allows unstable abi to be used
+#![feature(abi_x86_interrupt)]
 use core::panic::PanicInfo;
 pub mod serial;
 pub mod vga_buffer;
+pub mod interrupts;
+
+pub fn init(){
+    interrupts::init_idt();
+}
 
 // defining a testable trait 
 pub trait Testable{
@@ -47,6 +54,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> !{
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> !{
+    init(); // set up an IDT for cargo test, since it's a module independent from main
     test_main();
     loop{} 
 }
