@@ -19,7 +19,8 @@ lazy_static! {
 #[doc(hidden)]
 pub fn _print(args: ::core::fmt::Arguments){
     use core::fmt::Write;
-    SERIAL1.lock().write_fmt(args).expect("Serial printing failed.");
+    // expect - reason the result should be Ok()
+    SERIAL1.lock().write_fmt(args).expect("Serial printing should not have failed.");
 }
 
 

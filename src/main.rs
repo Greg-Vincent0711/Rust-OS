@@ -10,9 +10,9 @@ use core::panic::PanicInfo;
 use learning_os::println;
 
 
-// TO RUN WITH QEMU -  cargo bootimage; 
-// first time running with qemu: qemu-system-x86_64 -drive format=raw,file=target/x86_64-buildData/debug/bootimage-learning_os.bin
-// TO TEST - cargo test
+// To build for QEMU -  cargo bootimage; 
+// To run with QEMU - qemu-system-x86_64 -drive format=raw,file=target/x86_64-buildData/debug/bootimage-learning_os.bin
+// To test - cargo test
 
 /**
  * new entry point - no runtime is calling main anymore
@@ -29,8 +29,15 @@ pub extern "C" fn _start() -> ! {
     learning_os::init();
     //invoke a breakpoint exception to test the handler
     x86_64::instructions::interrupts::int3();
+
+    //triggering a page fault to catch a double fault
+    unsafe{
+        //virtual addr isn't mapped to a physical, so a fault occurs
+        *(0xdeadbeef as *mut u8) = 42;
+    }
+
     /*
-     * test_main is conditionally compiled
+     * test_main is conditionally compiled - hence the cfg flag
      * Only when the test_runner fn is in effect
      */
     #[cfg(test)]

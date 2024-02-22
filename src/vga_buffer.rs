@@ -132,12 +132,14 @@ impl Writer{
         //omit the 0th row since it's off the screen
         for row in 1..BUFFER_HEIGHT{
             for col in 0..BUFFER_WIDTH{
-                //shift everything up one if need be
+                //shift everything down one
                 let character = self.buffer.chars[row][col].read();
                 self.buffer.chars[row - 1][col].write(character);
             }
         }
+        // overwrite the original row's memory
         self.clear_row(BUFFER_HEIGHT - 1);
+        // reset the column position
         self.column_position = 0;
      }
 

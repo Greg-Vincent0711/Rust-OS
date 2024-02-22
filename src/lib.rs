@@ -12,8 +12,11 @@ use core::panic::PanicInfo;
 pub mod serial;
 pub mod vga_buffer;
 pub mod interrupts;
+// global descriptor table
+pub mod gdt;
 
 pub fn init(){
+    gdt::init();
     interrupts::init_idt();
 }
 
@@ -54,7 +57,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> !{
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> !{
-    init(); // set up an IDT for cargo test, since it's a module independent from main
+    init(); 
     test_main();
     loop{} 
 }
