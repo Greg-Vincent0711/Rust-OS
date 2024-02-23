@@ -32,3 +32,8 @@ test-args = [
 ]
 # cargo test exit code workaround
 test-success-exit-code = 33
+
+# test only runs once
+[[test]]
+name = "stack_overflow"
+harness = false
