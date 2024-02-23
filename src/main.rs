@@ -19,7 +19,6 @@ use learning_os::println;
  * 
  * disable name mangling - needed to tell
  * the entry point fn name to the linker
- * 
  * extern C - uses C calling convention
  */
 #[no_mangle]
@@ -28,13 +27,13 @@ pub extern "C" fn _start() -> ! {
     //initialize the idt, set the breakpoint handler
     learning_os::init();
     //invoke a breakpoint exception to test the handler
-    x86_64::instructions::interrupts::int3();
+    // x86_64::instructions::interrupts::int3();
 
     //triggering a page fault to catch a double fault
-    unsafe{
-        //virtual addr isn't mapped to a physical, so a fault occurs
-        *(0xdeadbeef as *mut u8) = 42;
-    }
+    // unsafe{
+    //     //virtual addr isn't mapped to a physical, so a fault occurs
+    //     *(0xdeadbeef as *mut u8) = 42;
+    // }
 
     /*
      * test_main is conditionally compiled - hence the cfg flag

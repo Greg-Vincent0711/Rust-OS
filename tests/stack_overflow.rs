@@ -46,7 +46,7 @@ lazy_static! {
 
 extern "x86-interrupt" fn test_double_fault_handler(
     _stack_frame: InterruptStackFrame,
-    _error_code:u64,
+    _error_code: u64,
 ) -> ! {
     serial_println!("Printing from double fault test...[ok]");
     exit_qemu(QemuExitCode::Success);

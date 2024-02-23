@@ -16,8 +16,14 @@ pub mod interrupts;
 pub mod gdt;
 
 pub fn init(){
+    // init the gdt -> to use TSS -> to use IST for stackoverflow err
     gdt::init();
-    interrupts::init_idt();
+    // init interrupts
+    // interrupts::init_idt();
+    // unsafe since undefined behavior can happen
+    unsafe {interrupts::PICS.lock().initialize()};
+    // make it so that the CPU listens to pic interrupts
+    x86_64::instructions::interrupts::enable(); 
 }
 
 // defining a testable trait 
