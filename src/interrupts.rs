@@ -1,4 +1,6 @@
 
+use core::iter::Scan;
+
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use crate::println;
 use lazy_static::lazy_static;
@@ -58,26 +60,27 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     use x86_64::instructions::port::Port;
     use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
     use spin::Mutex;
-    // port of the PS/2 controller for keyboard input
-    let ps_port = 0x60;
-    let mut port = Port::new(ps_port);
-    let scancode: u8 = unsafe{port.read()};
-    let key = match scancode{
-        0x02 => Some("1"),
-        0x03 => Some("2"),
-        0x04 => Some("3"),
-        0x05 => Some("4"),
-        0x06 => Some("5"),
-        0x07 => Some("6"),
-        0x08 => Some("7"),
-        0x09 => Some("8"),
-        0x0a => Some("9"),
-        0x0b => Some("0"),
-        _ => None,
-    };
-    if let Some(key) = key {
-        print!{"{}", key}
+   lazy_static!{
+    // Us104Key - standard keyboard, scancodes, ignore the ctrl key for now
+    static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> = 
+        Mutex::new(Keyboard::new(layouts::Us104Key, ScancodeSet1, HandleControl::Ignore));
+   }
+   // create a reference to the locked keyboard object
+   let mut keyboard = KEYBOARD.lock();
+   let mut port = Port::new(0x60);
+   // read the scancode from the hardware port attached to the keyboard
+   let scancode: u8 = unsafe{port.read()};
+   // bind the scancode to the keyboard if its there
+   if let Ok(Some(key_event)) = keyboard.add_byte(scancode){
+    // if there's a scancode, process its data...is it a press or release, and the key
+    if let Some(key) = keyboard.process_keyevent(key_event){
+        match key {
+            // if we have a readable character, print it, etc
+            DecodedKey::Unicode(readable_character) => print!("{}", readable_character),
+            DecodedKey::RawKey(character) => print!("{:?}", character)
+        }
     }
+   }
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
     }
