@@ -25,6 +25,8 @@ lazy_static! {
         // indexing starts since we're dealing with non-cpu interrupts > 31
         idt[InterruptIndex::Timer.as_usize()]
             .set_handler_fn(timer_interrupt_handler);
+        idt[InterruptIndex::Keyboard.as_usize()]
+            .set_handler_fn(keyboard_interrupt_handler);
 
         idt
     };
@@ -45,17 +47,41 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame){
-    print!("Timer interrupt caught");
-    // send the EOI signal so we can continue to process timer signals
+    print!(".");
     unsafe{
+        // send the EOI signal so we can continue to process other signals
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     }
 }
 
-// extern "x86-interrupt" fn keyboard_interrupt(_stack_frame: InterruptStackFrame){
-    // do something on keyboard interrupt
-    
-// }
+extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame){
+    use x86_64::instructions::port::Port;
+    use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
+    use spin::Mutex;
+    // port of the PS/2 controller for keyboard input
+    let ps_port = 0x60;
+    let mut port = Port::new(ps_port);
+    let scancode: u8 = unsafe{port.read()};
+    let key = match scancode{
+        0x02 => Some("1"),
+        0x03 => Some("2"),
+        0x04 => Some("3"),
+        0x05 => Some("4"),
+        0x06 => Some("5"),
+        0x07 => Some("6"),
+        0x08 => Some("7"),
+        0x09 => Some("8"),
+        0x0a => Some("9"),
+        0x0b => Some("0"),
+        _ => None,
+    };
+    if let Some(key) = key {
+        print!{"{}", key}
+    }
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
+    }
+}
 
 #[test_case]
 fn test_breakpoint_exception(){
@@ -67,25 +93,23 @@ fn test_breakpoint_exception(){
 // timer uses first index of pic
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
-
-pub static PICS: spin::Mutex<ChainedPics> = 
-    spin::Mutex::new(unsafe {ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET)});
+pub static PICS: spin::Mutex<ChainedPics> = spin::Mutex::new(unsafe {ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET)});
 
 
-    #[derive(Debug,Clone,Copy)]
-    #[repr(u8)]
-    pub enum InterruptIndex{
-        Timer = PIC_1_OFFSET,
-        // Keyboard = PIC_1_OFFSET + 1
+#[derive(Debug,Clone,Copy)]
+#[repr(u8)]
+pub enum InterruptIndex{
+    Timer = PIC_1_OFFSET,
+    Keyboard
+}
+
+impl InterruptIndex{
+    fn as_u8(self) -> u8 {
+        self as u8
     }
 
-    impl InterruptIndex{
-        fn as_u8(self) -> u8 {
-            self as u8
-        }
-
-        fn as_usize(self) -> usize {
-            usize::from(self.as_u8())
-        }
+    fn as_usize(self) -> usize {
+        usize::from(self.as_u8())
     }
+}
 

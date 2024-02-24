@@ -186,7 +186,12 @@ lazy_static! {
 pub fn _print(args: fmt::Arguments){
     //use Writ trait without relying on stdlib
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    use x86_64::instructions::interrupts;
+    // closure - keeps deadlock from happening
+    // no interrupts can happen while the Writer is locked
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 //builds off print fn
@@ -221,12 +226,21 @@ fn test_println_many(){
 
 #[test_case]
 fn verify_output(){
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
     //test by writing something to the screen
     let s = "any random string that fits on a single line.";
     println!("{}", s);
-    for(i, c) in s.chars().enumerate(){
-        //read back that same screen and compare them
-        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(screen_char.character), c)
-    }
+    // keeps possible deadlock from happening
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        // fixes possible race condition between Writer and reading characters
+        // allows for writing to a locked writer
+        writeln!(writer, "\n{}", s).expect("Writeln failed");
+        for(i, c) in s.chars().enumerate(){
+            //read back that same screen and compare them
+            let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.character), c);
+        }
+    })
 }

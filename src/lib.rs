@@ -19,7 +19,7 @@ pub fn init(){
     // init the gdt -> to use TSS -> to use IST for stackoverflow err
     gdt::init();
     // init interrupts
-    // interrupts::init_idt();
+    interrupts::init_idt();
     // unsafe since undefined behavior can happen
     unsafe {interrupts::PICS.lock().initialize()};
     // make it so that the CPU listens to pic interrupts
@@ -55,7 +55,16 @@ pub fn test_panic_handler(info: &PanicInfo) -> !{
     serial_println!("[failed]\n");
     serial_println!("[Error info: {}]\n", info);
     exit_qemu(QemuExitCode::Failed);
-    loop{}
+    hlt_loop();
+}
+
+
+
+pub fn hlt_loop() -> ! {
+    // sleep until the next instruction arrives
+    loop{
+        x86_64::instructions::hlt();
+    }
 }
 
 //lib is it's own separately compiled attribute
@@ -65,7 +74,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> !{
 pub extern "C" fn _start() -> !{
     init(); 
     test_main();
-    loop{} 
+    hlt_loop();
 }
 
 #[cfg(test)]

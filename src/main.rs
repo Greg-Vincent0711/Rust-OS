@@ -26,6 +26,7 @@ pub extern "C" fn _start() -> ! {
     println!("Hello Universe{}", "!");
     //initialize the idt, set the breakpoint handler
     learning_os::init();
+    learning_os::hlt_loop();
     //invoke a breakpoint exception to test the handler
     // x86_64::instructions::interrupts::int3();
 
@@ -39,10 +40,9 @@ pub extern "C" fn _start() -> ! {
      * test_main is conditionally compiled - hence the cfg flag
      * Only when the test_runner fn is in effect
      */
-    #[cfg(test)]
-    test_main();
-    println!("Successfully caught a breakpoint and didn't crash.");
-    loop{}
+    // #[cfg(test)]
+    // test_main();
+    // println!("Successfully caught a breakpoint and didn't crash.");
 }
 
 
@@ -59,6 +59,7 @@ fn panic(_info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    learning_os::test_panic_handler(_info);
+    println!("{}", _info);
+    learning_os::hlt_loop();
 }
 

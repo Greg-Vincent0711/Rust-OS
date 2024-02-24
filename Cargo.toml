@@ -20,6 +20,8 @@ spin = "0.5.2"
 uart_16550 = "0.2.0"
 # changing the primary/secondary PICs to be in a usable # range
 pic8259 = "0.10.1"
+# used for keyboard intergration
+pc-keyboard = "0.7.0"
 
 [dependencies.lazy_static]
 version = "1.0"
