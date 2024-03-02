@@ -26,6 +26,14 @@ pub extern "C" fn _start() -> ! {
     println!("Hello Universe{}", "!");
     //initialize the idt, set the breakpoint handler
     learning_os::init();
+
+    // triggering a page fault to understand paging errors
+    let ptr = 0x205280 as *mut u8;
+    unsafe {let x = *ptr;}
+    println!("Successful reading");
+
+    // will throw an error since we can't write to a code page
+    unsafe {*ptr = 42;}
     learning_os::hlt_loop();
     //invoke a breakpoint exception to test the handler
     // x86_64::instructions::interrupts::int3();
@@ -34,7 +42,7 @@ pub extern "C" fn _start() -> ! {
     // unsafe{
     //     //virtual addr isn't mapped to a physical, so a fault occurs
     //     *(0xdeadbeef as *mut u8) = 42;
-    // }
+    // }    
 
     /*
      * test_main is conditionally compiled - hence the cfg flag

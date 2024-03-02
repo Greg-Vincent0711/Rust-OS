@@ -1,6 +1,3 @@
-
-use core::iter::Scan;
-
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use crate::println;
 use lazy_static::lazy_static;
@@ -9,6 +6,8 @@ use crate::gdt;
 use pic8259::ChainedPics;
 use spin;
 use crate::print;
+use x86_64::structures::idt::PageFaultErrorCode;
+use crate::hlt_loop;
 
 // IDT must live for program runtime - cpu will reference it a lot
 // has to be static but also mutable so that we can set the 
@@ -29,6 +28,7 @@ lazy_static! {
             .set_handler_fn(timer_interrupt_handler);
         idt[InterruptIndex::Keyboard.as_usize()]
             .set_handler_fn(keyboard_interrupt_handler);
+        idt.page_fault.set_handler_fn(page_fault_handler);
 
         idt
     };
@@ -48,12 +48,24 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
     panic!("Caught a double fault exception \n{:#?}", stack_frame);
 }
 
-extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame){
+extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: InterruptStackFrame){
     print!(".");
     unsafe{
         // send the EOI signal so we can continue to process other signals
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     }
+}
+
+extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode){
+    // Cr2 holds address where error takes place
+    use x86_64::registers::control::Cr2;
+    println!("EXCEPTION: Caught a page_fault");
+    println!("Invalid Address Access: {:?}", Cr2::read());
+    // info on what type of memory access caused the page fault
+    println!("Error Code: {:?}", error_code);
+    println!("{:#?}", stack_frame);
+    // resolve the page fault by looping
+    hlt_loop();
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame){
@@ -67,9 +79,9 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
    }
    // create a reference to the locked keyboard object
    let mut keyboard = KEYBOARD.lock();
-   let mut port = Port::new(0x60);
+   let mut keyboard_port = Port::new(0x60);
    // read the scancode from the hardware port attached to the keyboard
-   let scancode: u8 = unsafe{port.read()};
+   let scancode: u8 = unsafe{keyboard_port.read()};
    // bind the scancode to the keyboard if its there
    if let Ok(Some(key_event)) = keyboard.add_byte(scancode){
     // if there's a scancode, process its data...is it a press or release, and the key
