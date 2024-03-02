@@ -1,3 +1,4 @@
+# TOML for a Minimal Rust Kernel... and all it's extensions.
 [package]
 name = "learning_os"
 version = "0.1.0"
