@@ -33,6 +33,7 @@ pub extern "C" fn _start() -> ! {
     println!("Successful reading");
 
     // will throw an error since we can't write to a code page
+    // Hence the Protection_Violation Error Code
     unsafe {*ptr = 42;}
     learning_os::hlt_loop();
     //invoke a breakpoint exception to test the handler
